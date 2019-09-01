@@ -1,25 +1,23 @@
 package main
 
 import (
-	"math/rand"
 	"runtime"
 	"sort"
 	"sync"
-	"time"
 )
 
 // MergeSort performs the merge sort algorithm.
 // Please supplement this function to accomplish the home work.
 
-func merge(input ...<-chan int64) <-chan int64{
+func merge1(input ...<-chan int64) <-chan int64{
 	if len(input) == 1 {
 		return input[0]
 	}
 	mid := len(input)/2
-	return subMerge(merge(input[:mid]...), merge(input[mid:]...))
+	return subMerge1(merge1(input[:mid]...), merge1(input[mid:]...))
 }
 
-func subMerge(input1, input2 <-chan int64) <-chan int64{
+func subMerge1(input1, input2 <-chan int64) <-chan int64{
 	out := make(chan int64)
 
 	go func() {
@@ -116,21 +114,21 @@ func MergeSort1(src []int64) {
 		inputs = append(inputs, arr2chan(arr))
 	}
 
-	output := merge(inputs...)
+	output := merge1(inputs...)
 
 	collectResult(src, output)
 }
 
-func prepare(src []int64) {
-	rand.Seed(time.Now().Unix())
-	for i := range src {
-		src[i] = rand.Int63()
-	}
-}
+//func prepare(src []int64) {
+//	rand.Seed(time.Now().Unix())
+//	for i := range src {
+//		src[i] = rand.Int63()
+//	}
+//}
 
-func main(){
-	numElements := 16 << 20
-	src := make([]int64, numElements)
-	prepare(src)
-	MergeSort1(src)
-}
+//func main(){
+//	numElements := 16 << 20
+//	src := make([]int64, numElements)
+//	prepare(src)
+//	MergeSort1(src)
+//}
