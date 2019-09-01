@@ -4,11 +4,11 @@
 
 1. 利用多核，每个核跑一个系统自带的排序，最后使用归并排序算法归并结果，但是结果很差。平均执行时间大约为系统自带排序的6倍。内存占用也大的离谱。
 
-   ![mergesort1-bencmark](/Users/yangs/Projects/talent-plan/tidb/img/mergesort1-bencmark.png)
+   ![mergesort1-bencmark](./img/mergesort1-bencmark.png)
 
    试着用go profile分析一下，发现`runtime.pthread_cond_wait`和`runtime.pthrad_cond_signal`占了60%的时间。
 
-   ![mergesort1-profile](/Users/yangs/Projects/talent-plan/tidb/img/mergesort1-profile.png)
+   ![mergesort1-profile](./img/mergesort1-profile.png)
 
    归并部分的代码如下所示，为了使用golang的channel和goroutine的特性，首先在`subMerge`函数内部执行一个匿名的协程函数，通过channel传递排好序的子序列。
 
