@@ -83,7 +83,7 @@
 
    用go profile分析了一下，最耗时的函数是排序函数。
 
-   ![mergesort2-profile](/Users/yangs/Projects/talent-plan/tidb/img/mergesort2-profile.png)
+   ![mergesort2-profile](./img/mergesort2-profile.png)
 
 * Week 2: [Map Reduce](./mapreduce)
 * Week 4: [Parallel Join](./join)
