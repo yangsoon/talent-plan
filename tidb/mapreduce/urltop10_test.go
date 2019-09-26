@@ -17,7 +17,7 @@ func testDataScale() ([]DataSize, []int) {
 }
 
 const (
-	dataDir = "/tmp/mr_homework"
+	dataDir = "/Users/yangs/mr_homework"
 )
 
 func dataPrefix(i int, ds DataSize, nMap int) string {

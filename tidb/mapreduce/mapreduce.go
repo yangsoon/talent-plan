@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"hash/fnv"
 	"io/ioutil"
@@ -30,7 +31,7 @@ type jobPhase string
 
 const (
 	mapPhase    jobPhase = "mapPhase"
-	reducePhase          = "reducePhase"
+	reducePhase 		 = "reducePhase"
 )
 
 type task struct {
@@ -112,7 +113,42 @@ func (c *MRCluster) worker() {
 				// hint: don't encode results returned by ReduceF, and just output
 				// them into the destination file directly so that users can get
 				// results formatted as what they want.
-				panic("YOUR CODE HERE")
+				fw, bw := CreateFileAndBuf(mergeName(t.dataDir, t.jobName, t.taskNumber))
+				kvMap := make(map[string] []string)
+
+				for i:=0; i < t.nMap; i++ {
+					rpath := reduceName(t.dataDir, t.jobName, i, t.taskNumber)
+
+					content, err := ioutil.ReadFile(rpath)
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					lines := bytes.Split(content, []byte("\n"))
+
+					for _, line := range lines {
+						if len(line) == 0 {
+							continue
+						}
+						var kv KeyValue
+						err = json.Unmarshal(line, &kv)
+						if err != nil {
+							log.Fatal(err)
+						}
+						kvMap[kv.Key] = append(kvMap[kv.Key], kv.Value)
+					}
+
+				}
+
+				for key, value := range kvMap {
+					res := t.reduceF(key, value)
+					_, err := bw.Write([]byte(res))
+					if err != nil {
+						log.Fatal(err)
+					}
+				}
+
+				SafeClose(fw, bw)
 			}
 			t.wg.Done()
 		case <-c.exit:
@@ -156,10 +192,33 @@ func (c *MRCluster) run(jobName, dataDir string, mapF MapF, reduceF ReduceF, map
 	for _, t := range tasks {
 		t.wg.Wait()
 	}
-
 	// reduce phase
 	// YOUR CODE HERE :D
-	panic("YOUR CODE HERE")
+	rtasks := make([]*task, 0, nReduce)
+	for i:=0; i < nReduce; i++ {
+		t := &task{
+			dataDir:    dataDir,
+			jobName:    jobName,
+			phase:      reducePhase,
+			taskNumber: i,
+			nReduce:    nReduce,
+			nMap:       nMap,
+			reduceF:    reduceF,
+		}
+		t.wg.Add(1)
+		rtasks = append(rtasks, t)
+		go func() { c.taskCh <- t }()
+	}
+
+	notifyFiles := make([]string, 0)
+	for _,t := range rtasks {
+		t.wg.Wait()
+		fileName := mergeName(t.dataDir, t.jobName, t.taskNumber)
+		notifyFiles = append(notifyFiles, fileName)
+	}
+	notify <- notifyFiles
+
+	c.wg.Wait()
 }
 
 func ihash(s string) int {
