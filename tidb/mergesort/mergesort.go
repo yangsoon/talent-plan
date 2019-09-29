@@ -6,6 +6,12 @@ import (
 	"sync"
 )
 
+type srcSlice struct {
+	data []int64
+	beginIdx int
+	endIdx int
+}
+
 func splitArr(src []int64) [][]int64{
 	cpuNum := runtime.NumCPU()
 	srcLen := len(src)
@@ -19,50 +25,63 @@ func splitArr(src []int64) [][]int64{
 
 	batch := srcLen / cpuNum
 
+	slices := make([][]int64, cpuNum)
+	for i:=0; i < cpuNum; i++ {
+		beginIdx := i * batch
+		endIdx := beginIdx + batch
+		if i == cpuNum - 1 {
+			endIdx = srcLen
+		}
+		slices[i] = make([]int64, endIdx-beginIdx)
+		copy(slices[i], src[beginIdx: endIdx])
+		slices[i] = src[beginIdx: endIdx]
+	}
+
 	for i:= 0; i < cpuNum; i++ {
-		go func(idx int) {
+		go func(cpy []int64) {
 			defer wg.Done()
-			beginIdx := idx * batch
-			endIdx := beginIdx + batch
-			if idx == cpuNum - 1 {
-				endIdx = srcLen
-			}
-			cpy := make([]int64, endIdx-beginIdx)
-			copy(cpy, src[beginIdx: endIdx])
 			sort.Slice(cpy, func(i, j int) bool {
 				return cpy[i] < cpy[j]
 			})
 			arrs <- cpy
-		}(i)
+		}(slices[i])
 	}
 
 	wg.Wait()
 	close(arrs)
 
 	out := make([][]int64, cpuNum)
-
-	for arr := range arrs {
-		out = append(out, arr)
+	for i:=0; i < cpuNum; i++{
+		out[i] = <-arrs
 	}
 	return out
 }
 
 func subMerge(in1, in2 []int64) []int64{
-	var res []int64
 	leftIdx, rightIdx := 0,0
 	leftLen, rightLen := len(in1), len(in2)
+	res := make([]int64, leftLen+rightLen)
 
+	i:=0
 	for leftIdx < leftLen && rightIdx < rightLen {
 		if in1[leftIdx] < in2[rightIdx] {
-			res = append(res, in1[leftIdx])
+			res[i] = in1[leftIdx]
 			leftIdx += 1
 		} else {
-			res = append(res, in2[rightIdx])
+			res[i] = in2[rightIdx]
 			rightIdx += 1
 		}
+		i += 1
 	}
-	res = append(res, in1[leftIdx:]...)
-	res = append(res, in2[rightIdx:]...)
+
+	for leftIdx < leftLen {
+		res[i] = in1[leftIdx]
+		i++; leftIdx++
+	}
+	for rightIdx < rightLen {
+		res[i] = in2[rightIdx]
+		i++; rightIdx++
+	}
 	return res
 }
 
@@ -75,16 +94,6 @@ func merge(in... []int64) []int64{
 }
 
 func MergeSort(src []int64) {
-
-	//cpuf, err := os.Create("cpu_pro")
-	//
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//
-	//pprof.StartCPUProfile(cpuf)
-    //defer pprof.StopCPUProfile()
-
 	out := splitArr(src)
 	copy(src, merge(out...))
 }

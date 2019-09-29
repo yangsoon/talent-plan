@@ -11,13 +11,15 @@ import (
 )
 
 func testDataScale() ([]DataSize, []int) {
-	dataSize := []DataSize{1 * MB, 10 * MB, 100 * MB, 500 * MB, 1 * GB}
-	nMapFiles := []int{5, 10, 20, 40, 60}
+	//dataSize := []DataSize{1 * MB, 10 * MB, 100 * MB, 500 * MB, 1 * GB}
+	dataSize := []DataSize{500 * MB}
+	//nMapFiles := []int{5, 10, 20, 40, 60}
+	nMapFiles := []int{40}
 	return dataSize, nMapFiles
 }
 
 const (
-	dataDir = "/Users/yangs/mr_homework"
+	dataDir = "/tmp/mr_homework"
 )
 
 func dataPrefix(i int, ds DataSize, nMap int) string {
