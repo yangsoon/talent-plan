@@ -12,7 +12,7 @@ import (
 // URLTop10 .
 func URLTop10(nWorkers int) RoundsArgs {
 	var args RoundsArgs
-	// round 1: do url count
+
 	args = append(args, RoundArgs{
 		MapFunc:    URLCountMap,
 		ReduceFunc: URLCountReduce,
@@ -20,132 +20,137 @@ func URLTop10(nWorkers int) RoundsArgs {
 	})
 
 	args = append(args, RoundArgs{
-		MapFunc: GetTopKMap,
+		MapFunc:    TopKMergeMap,
 		ReduceFunc: GetTopKReduce,
-		NReduce: 1,
+		NReduce:    1,
 	})
 
 	return args
 }
 
-// ExampleURLCountMap is the map function in the first round
 func URLCountMap(filename string, contents string) []KeyValue {
-	lines := strings.Split(string(contents), "\n")
-	kvs := make([]KeyValue, len(lines))
-	c := 0
+	lines := strings.Split(contents, "\n")
+	kv := make(map[string]int, len(lines))
 	for _, l := range lines {
 		l = strings.TrimSpace(l)
 		if len(l) == 0 {
 			continue
 		}
-		kvs[c] = KeyValue{Key: l}
-		c++
+		kv[l] += 1
 	}
-	return kvs[:c]
-}
-
-// ExampleURLCountReduce is the reduce function in the first round
-func URLCountReduce(key string, values []string) string {
-	return fmt.Sprintf("%s %s\n", key, strconv.Itoa(len(values)))
-}
-
-
-func GetTopKMap (filename string, contents string) []KeyValue {
-	lines := strings.Split(contents, "\n")
-	kvs := make([]KeyValue, 0, 10)
-	us, cs := TopK(lines, 10)
-	for i:=0; i < len(us); i++ {
-		kvs = append(kvs, KeyValue{"", fmt.Sprintf("%s %d", us[i], cs[i])})
+	kvs := make([]KeyValue, 0, len(lines))
+	for k, v := range kv {
+		kvs = append(kvs, KeyValue{
+			Key:   strconv.Itoa(ihash(k) % GetMRCluster().NWorkers()),
+			Value: fmt.Sprintf("%s %d", k, v),
+		})
 	}
 	return kvs
 }
 
-func GetTopKReduce (key string, values []string) string {
-	us, cs := TopK(values, 10)
+func URLCountReduce(key string, values []string) string {
+
+	kv := make(map[string]int, len(values))
+
+	for _, value := range values {
+		if len(value) == 0 {
+			continue
+		}
+		tmp := strings.Split(value, " ")
+		n, err := strconv.Atoi(tmp[1])
+		if err != nil {
+			panic(err)
+		}
+		kv[tmp[0]] += n
+	}
+
+	topk := Top10(kv)
+
 	buf := new(bytes.Buffer)
-	for i:=len(us)-1; i >= 0; i-- {
-		fmt.Fprintf(buf, "%s: %d\n", us[i], cs[i])
+	for i := 0; i < len(topk); i++ {
+		fmt.Fprintf(buf, "%s %d\n", topk[i].url, topk[i].cnt)
 	}
 	return buf.String()
 }
 
+func TopKMergeMap(filename string, contents string) []KeyValue {
+	lines := strings.Split(contents, "\n")
+	kvs := make([]KeyValue, 0, len(lines))
+	for _, l := range lines {
+		if len(l) == 0 {
+			continue
+		}
+		tmp := strings.Split(l, " ")
+		kvs = append(kvs, KeyValue{"", fmt.Sprintf("%s %s", tmp[0], tmp[1])})
+	}
+	return kvs
+}
 
-func TopK(urls []string, n int) ([]string, []int) {
+func GetTopKReduce(key string, values []string) string {
+	ucs := make([]*UrlItem, 0, len(values))
 
-	us := make([]string, 0, n)
-	cs := make([]int, 0, n)
+	for _, v := range values {
+		v := strings.TrimSpace(v)
+		if len(v) == 0 {
+			continue
+		}
+		tmp := strings.Split(v, " ")
+		n, err := strconv.Atoi(tmp[1])
+		if err != nil {
+			panic(err)
+		}
+		ucs = append(ucs, &UrlItem{tmp[0], n})
+	}
 
-	if len(urls) <= n {
-		ucs := make([] *UrlItem, 0, len(urls))
-		for i:=0; i < len(urls); i++{
-			if len(urls[i]) == 0 {
+	// 排序
+	sort.Slice(ucs, func(i, j int) bool {
+		if ucs[i].cnt == ucs[j].cnt {
+			return ucs[i].url < ucs[j].url
+		}
+		return ucs[i].cnt > ucs[j].cnt
+	})
+
+	buf := new(bytes.Buffer)
+	for i := 0; i < len(ucs); i++ {
+		if i == 10 {
+			break
+		}
+		fmt.Fprintf(buf, "%s: %d\n", ucs[i].url, ucs[i].cnt)
+	}
+	return buf.String()
+}
+
+func Top10(urlkv map[string]int) UrlTopK {
+
+	c := 0
+	topk := make(UrlTopK, 0, 10)
+
+	var minItem interface{}
+	var minVal int
+
+	for url, num := range urlkv {
+		c ++
+		switch {
+		case c > 10:
+			if num < minVal {
 				continue
 			}
-			tmp := strings.Split(urls[i], " ")
-			n, err := strconv.Atoi(tmp[1])
-			if err != nil {
-				panic(err)
-			}
-			ucs = append(ucs, &UrlItem{tmp[0], n})
-		}
-		sort.Slice(ucs, func(i, j int) bool {
-			if ucs[i].cnt == ucs[j].cnt {
-				return ucs[i].url > ucs[j].url
-			}
-			return ucs[i].cnt < ucs[j].cnt
-		})
-
-		for _, u := range ucs {
-			us = append(us, u.url)
-			cs = append(cs, u.cnt)
-		}
-		return us, cs
-	}
-
-	topk := make(UrlTopK, n)
-	for i:=0; i < n; i++ {
-		if len(urls[i]) == 0 {
-			continue
-		}
-		tmp := strings.Split(urls[i], " ")
-		n, err := strconv.Atoi(tmp[1])
-		if err != nil {
-			panic(err)
-		}
-		topk[i] = UrlItem{tmp[0], n}
-	}
-	heap.Init(&topk)
-
-	minItem := heap.Pop(&topk)
-	minVal := minItem.(UrlItem).cnt
-	heap.Push(&topk, minItem)
-
-	for i:=n; i < len(urls); i++ {
-		if len(urls[i]) == 0 {
-			continue
-		}
-		tmp := strings.Split(urls[i], " ")
-		n, err := strconv.Atoi(tmp[1])
-		if err != nil {
-			panic(err)
-		}
-		if n < minVal {
-			continue
-		} else {
-			heap.Push(&topk, UrlItem{tmp[0], n})
+			heap.Push(&topk, UrlItem{url, num})
 			heap.Pop(&topk)
 			minItem = heap.Pop(&topk)
 			minVal = minItem.(UrlItem).cnt
 			heap.Push(&topk, minItem)
+		case c < 10:
+			topk = append(topk, UrlItem{url, num})
+		case c == 10:
+			topk = append(topk, UrlItem{url, num})
+			heap.Init(&topk)
+			minItem = heap.Pop(&topk)
+			minVal = minItem.(UrlItem).cnt
+			heap.Push(&topk, minItem)
 		}
-
 	}
-	for topk.Len() > 0 {
-		item := heap.Pop(&topk).(UrlItem)
-		us = append(us, item.url)
-		cs = append(cs, item.cnt)
-	}
-	return us, cs
+	return topk
 }
 
 type UrlItem struct {
@@ -166,11 +171,11 @@ func (u UrlTopK) Less(i, j int) bool {
 	return u[i].cnt < u[j].cnt
 }
 
-func (u UrlTopK) Swap(i, j int){
+func (u UrlTopK) Swap(i, j int) {
 	u[i], u[j] = u[j], u[i]
 }
 
-func (u *UrlTopK) Push(a interface{}){
+func (u *UrlTopK) Push(a interface{}) {
 	item := a.(UrlItem)
 	*u = append(*u, item)
 }
