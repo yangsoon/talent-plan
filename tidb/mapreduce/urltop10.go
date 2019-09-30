@@ -14,8 +14,8 @@ func URLTop10(nWorkers int) RoundsArgs {
 	var args RoundsArgs
 	// round 1: do url count
 	args = append(args, RoundArgs{
-		MapFunc:    ExampleURLCountMap,
-		ReduceFunc: ExampleURLCountReduce,
+		MapFunc:    URLCountMap,
+		ReduceFunc: URLCountReduce,
 		NReduce:    nWorkers,
 	})
 
@@ -27,6 +27,28 @@ func URLTop10(nWorkers int) RoundsArgs {
 
 	return args
 }
+
+// ExampleURLCountMap is the map function in the first round
+func URLCountMap(filename string, contents string) []KeyValue {
+	lines := strings.Split(string(contents), "\n")
+	kvs := make([]KeyValue, len(lines))
+	c := 0
+	for _, l := range lines {
+		l = strings.TrimSpace(l)
+		if len(l) == 0 {
+			continue
+		}
+		kvs[c] = KeyValue{Key: l}
+		c++
+	}
+	return kvs[:c]
+}
+
+// ExampleURLCountReduce is the reduce function in the first round
+func URLCountReduce(key string, values []string) string {
+	return fmt.Sprintf("%s %s\n", key, strconv.Itoa(len(values)))
+}
+
 
 func GetTopKMap (filename string, contents string) []KeyValue {
 	lines := strings.Split(contents, "\n")
