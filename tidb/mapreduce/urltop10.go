@@ -40,9 +40,15 @@ func URLCountMap(filename string, contents string) []KeyValue {
 	}
 	kvs := make([]KeyValue, 0, len(lines))
 	for k, v := range kv {
+
+		var buffer bytes.Buffer
+		buffer.WriteString(k)
+		buffer.WriteString(" ")
+		buffer.WriteString(strconv.Itoa(v))
+
 		kvs = append(kvs, KeyValue{
 			Key:   strconv.Itoa(ihash(k) % GetMRCluster().NWorkers()),
-			Value: fmt.Sprintf("%s %d", k, v),
+			Value: buffer.String(),
 		})
 	}
 	return kvs
@@ -81,7 +87,17 @@ func TopKMergeMap(filename string, contents string) []KeyValue {
 			continue
 		}
 		tmp := strings.Split(l, " ")
-		kvs = append(kvs, KeyValue{"", fmt.Sprintf("%s %s", tmp[0], tmp[1])})
+
+		var buffer bytes.Buffer
+
+		buffer.WriteString(tmp[0])
+		buffer.WriteString(" ")
+		buffer.WriteString(tmp[1])
+
+		kvs = append(kvs, KeyValue{
+			Key: "",
+			Value: buffer.String(),
+		})
 	}
 	return kvs
 }
