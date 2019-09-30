@@ -32,7 +32,7 @@ func URLCountMap(filename string, contents string) []KeyValue {
 	lines := strings.Split(contents, "\n")
 	kv := make(map[string]int, len(lines))
 	for _, l := range lines {
-		l = strings.TrimSpace(l)
+		//l = strings.TrimSpace(l)
 		if len(l) == 0 {
 			continue
 		}
@@ -67,7 +67,7 @@ func URLCountReduce(key string, values []string) string {
 		if err != nil {
 			panic(err)
 		}
-		kv[tmp[0]] += n
+		kv[tmp[0]] = kv[tmp[0]] + n
 	}
 
 	topk := Top10(kv)
@@ -106,7 +106,7 @@ func GetTopKReduce(key string, values []string) string {
 	ucs := make([]*UrlItem, 0, len(values))
 
 	for _, v := range values {
-		v := strings.TrimSpace(v)
+		//v := strings.TrimSpace(v)
 		if len(v) == 0 {
 			continue
 		}
