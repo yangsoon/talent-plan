@@ -36,7 +36,7 @@ func URLCountMap(filename string, contents string) []KeyValue {
 		if len(l) == 0 {
 			continue
 		}
-		kv[l] += 1
+		kv[l] = kv[l] + 1
 	}
 	kvs := make([]KeyValue, 0, len(lines))
 	for k, v := range kv {
