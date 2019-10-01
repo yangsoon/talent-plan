@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"bytes"
+	//"encoding/json"
 	"github.com/json-iterator/go"
 	"hash/fnv"
 	"io/ioutil"
@@ -121,24 +121,24 @@ func (c *MRCluster) worker() {
 				for i:=0; i < t.nMap; i++ {
 					rpath := reduceName(t.dataDir, t.jobName, i, t.taskNumber)
 
-					content, err := ioutil.ReadFile(rpath)
+					file, err := os.Open(rpath)
 					if err != nil {
-						log.Fatal(err)
+						panic(err)
 					}
-
-					lines := bytes.Split(content, []byte("\n"))
-
-					for _, line := range lines {
-						if len(line) == 0 {
-							continue
-						}
+					decoder := json.NewDecoder(file)
+					for {
 						var kv KeyValue
-						err = json.Unmarshal(line, &kv)
+						err = decoder.Decode(&kv)
 						if err != nil {
-							log.Fatal(err)
+							break
 						}
-						kvMap[kv.Key] = append(kvMap[kv.Key], kv.Value)
+						if v, ok := kvMap[kv.Key]; ok{
+							kvMap[kv.Key] = append(v, kv.Value)
+						} else{
+							kvMap[kv.Key] = []string{kv.Value}
+						}
 					}
+					file.Close()
 
 				}
 

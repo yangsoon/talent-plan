@@ -36,12 +36,12 @@ func URLCountMap(filename string, contents string) []KeyValue {
 		if len(l) == 0 {
 			continue
 		}
-		kv[l] = kv[l] + 1
+		kv[l] += 1
 	}
 	kvs := make([]KeyValue, 0, len(lines))
+	var buffer bytes.Buffer
 	for k, v := range kv {
 
-		var buffer bytes.Buffer
 		buffer.WriteString(k)
 		buffer.WriteString(" ")
 		buffer.WriteString(strconv.Itoa(v))
@@ -50,7 +50,10 @@ func URLCountMap(filename string, contents string) []KeyValue {
 			Key:   strconv.Itoa(ihash(k) % GetMRCluster().NWorkers()),
 			Value: buffer.String(),
 		})
+
+		buffer.Reset()
 	}
+	//fmt.Println(kvs)
 	return kvs
 }
 
@@ -67,7 +70,7 @@ func URLCountReduce(key string, values []string) string {
 		if err != nil {
 			panic(err)
 		}
-		kv[tmp[0]] = kv[tmp[0]] + n
+		kv[tmp[0]] += n
 	}
 
 	topk := Top10(kv)
@@ -82,13 +85,13 @@ func URLCountReduce(key string, values []string) string {
 func TopKMergeMap(filename string, contents string) []KeyValue {
 	lines := strings.Split(contents, "\n")
 	kvs := make([]KeyValue, 0, len(lines))
+
+	var buffer bytes.Buffer
 	for _, l := range lines {
 		if len(l) == 0 {
 			continue
 		}
 		tmp := strings.Split(l, " ")
-
-		var buffer bytes.Buffer
 
 		buffer.WriteString(tmp[0])
 		buffer.WriteString(" ")
@@ -98,6 +101,7 @@ func TopKMergeMap(filename string, contents string) []KeyValue {
 			Key: "",
 			Value: buffer.String(),
 		})
+		buffer.Reset()
 	}
 	return kvs
 }
@@ -118,7 +122,6 @@ func GetTopKReduce(key string, values []string) string {
 		ucs = append(ucs, &UrlItem{tmp[0], n})
 	}
 
-	// 排序
 	sort.Slice(ucs, func(i, j int) bool {
 		if ucs[i].cnt == ucs[j].cnt {
 			return ucs[i].url < ucs[j].url
