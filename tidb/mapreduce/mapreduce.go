@@ -2,8 +2,8 @@ package main
 
 import (
 	"bufio"
-	//"encoding/json"
-	"github.com/json-iterator/go"
+	"encoding/json"
+	//"github.com/json-iterator/go"
 	"hash/fnv"
 	"io/ioutil"
 	"log"
@@ -14,7 +14,7 @@ import (
 	"sync"
 )
 
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
+//var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // KeyValue is a type used to hold the key/value pairs passed to the map and reduce functions.
 type KeyValue struct {
