@@ -228,4 +228,5 @@ ok  	talent	82.628s
 
    首先我们看一下example的实现,语言描述比较难以理解，可以直接看下面的图片:
    
-   <img src="/Users/yangs/Projects/talent-plan/tidb/mapreduce/img/mapreduce.png" style="zoom:100%;" />
+   <img src="./img/mapreduce.png" style="zoom:100%;" />
+
