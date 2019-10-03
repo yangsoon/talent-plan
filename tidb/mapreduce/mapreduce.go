@@ -212,7 +212,7 @@ func (c *MRCluster) run(jobName, dataDir string, mapF MapF, reduceF ReduceF, map
 		go func() { c.taskCh <- t }()
 	}
 
-	notifyFiles := make([]string, 0)
+	notifyFiles := make([]string, 0, nReduce)
 	for _,t := range rtasks {
 		t.wg.Wait()
 		fileName := mergeName(t.dataDir, t.jobName, t.taskNumber)
