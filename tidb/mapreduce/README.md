@@ -71,6 +71,72 @@ make gendata
 
 ### 实验结果
 
+1. 测试example，但是由于
+
+```shell
+go test -v -run=TestExampleURLTop -timeout=20m                                                                                                                                                                                        === RUN   TestExampleURLTop
+Case0 PASS, dataSize=1MB, nMapFiles=5, cost=71.227628ms
+Case1 PASS, dataSize=1MB, nMapFiles=5, cost=38.368677ms
+Case2 PASS, dataSize=1MB, nMapFiles=5, cost=39.188912ms
+Case3 PASS, dataSize=1MB, nMapFiles=5, cost=60.133963ms
+Case4 PASS, dataSize=1MB, nMapFiles=5, cost=106.654834ms
+Case5 PASS, dataSize=1MB, nMapFiles=5, cost=51.533737ms
+Case6 PASS, dataSize=1MB, nMapFiles=5, cost=54.91819ms
+Case7 PASS, dataSize=1MB, nMapFiles=5, cost=50.392565ms
+Case8 PASS, dataSize=1MB, nMapFiles=5, cost=59.541801ms
+Case9 PASS, dataSize=1MB, nMapFiles=5, cost=41.949663ms
+Case10 PASS, dataSize=1MB, nMapFiles=5, cost=40.056578ms
+Case0 PASS, dataSize=10MB, nMapFiles=10, cost=468.779079ms
+Case1 PASS, dataSize=10MB, nMapFiles=10, cost=381.587179ms
+Case2 PASS, dataSize=10MB, nMapFiles=10, cost=329.319128ms
+Case3 PASS, dataSize=10MB, nMapFiles=10, cost=322.881101ms
+Case4 PASS, dataSize=10MB, nMapFiles=10, cost=1.072345961s
+Case5 PASS, dataSize=10MB, nMapFiles=10, cost=524.189537ms
+Case6 PASS, dataSize=10MB, nMapFiles=10, cost=408.346889ms
+Case7 PASS, dataSize=10MB, nMapFiles=10, cost=446.816374ms
+Case8 PASS, dataSize=10MB, nMapFiles=10, cost=487.561721ms
+Case9 PASS, dataSize=10MB, nMapFiles=10, cost=306.624337ms
+Case10 PASS, dataSize=10MB, nMapFiles=10, cost=376.177796ms
+Case0 PASS, dataSize=100MB, nMapFiles=20, cost=4.750714284s
+Case1 PASS, dataSize=100MB, nMapFiles=20, cost=2.983633463s
+Case2 PASS, dataSize=100MB, nMapFiles=20, cost=2.948469839s
+Case3 PASS, dataSize=100MB, nMapFiles=20, cost=3.043936117s
+Case4 PASS, dataSize=100MB, nMapFiles=20, cost=6.422089994s
+Case5 PASS, dataSize=100MB, nMapFiles=20, cost=4.868142606s
+Case6 PASS, dataSize=100MB, nMapFiles=20, cost=4.652548463s
+Case7 PASS, dataSize=100MB, nMapFiles=20, cost=4.082551044s
+Case8 PASS, dataSize=100MB, nMapFiles=20, cost=3.113776453s
+Case9 PASS, dataSize=100MB, nMapFiles=20, cost=2.713142089s
+Case10 PASS, dataSize=100MB, nMapFiles=20, cost=3.204178575s
+Case0 PASS, dataSize=500MB, nMapFiles=40, cost=27.915669149s
+Case1 PASS, dataSize=500MB, nMapFiles=40, cost=17.785030865s
+Case2 PASS, dataSize=500MB, nMapFiles=40, cost=14.928478109s
+Case3 PASS, dataSize=500MB, nMapFiles=40, cost=15.174448278s
+Case4 PASS, dataSize=500MB, nMapFiles=40, cost=19.036761745s
+Case5 PASS, dataSize=500MB, nMapFiles=40, cost=22.623413456s
+Case6 PASS, dataSize=500MB, nMapFiles=40, cost=20.502704714s
+Case7 PASS, dataSize=500MB, nMapFiles=40, cost=21.296458964s
+Case8 PASS, dataSize=500MB, nMapFiles=40, cost=15.326500158s
+Case9 PASS, dataSize=500MB, nMapFiles=40, cost=13.868498836s
+Case10 PASS, dataSize=500MB, nMapFiles=40, cost=16.3501742s
+Case0 PASS, dataSize=1GB, nMapFiles=60, cost=47.301266006s
+Case1 PASS, dataSize=1GB, nMapFiles=60, cost=33.105371391s
+Case2 PASS, dataSize=1GB, nMapFiles=60, cost=31.467110542s
+Case3 PASS, dataSize=1GB, nMapFiles=60, cost=30.571562211s
+Case4 PASS, dataSize=1GB, nMapFiles=60, cost=35.320646583s
+Case5 PASS, dataSize=1GB, nMapFiles=60, cost=46.651973173s
+Case6 PASS, dataSize=1GB, nMapFiles=60, cost=42.557989971s
+Case7 PASS, dataSize=1GB, nMapFiles=60, cost=43.077041606s
+Case8 PASS, dataSize=1GB, nMapFiles=60, cost=30.530047577s
+Case9 PASS, dataSize=1GB, nMapFiles=60, cost=31.555702192s
+Case10 PASS, dataSize=1GB, nMapFiles=60, cost=32.766306771s
+--- PASS: TestExampleURLTop (658.60s)
+PASS
+ok  	talent	658.799s
+```
+
+
+
 ```shell
 make test_homework
 go test -v -run=TestURLTop -timeout=20m
@@ -226,7 +292,12 @@ ok  	talent	82.628s
 
 2. 任务二：实现你自己`MapF`和`ReduceF`来计算top10。
 
-   首先我们看一下example的实现,语言描述比较难以理解，可以直接看下面的图片:
+   首先我们看一下example的实现,语言描述比较难以理解，可以直接看下面的图片: 如图所示，example中的topK的计算分成了2次MapReduce来实现。
    
-   <img src="./img/mapreduce.png" style="zoom:100%;" />
+   <img src="./img/mr-example-#1.png"/>
 
+![](./img/mr-example-#2.png)
+
+![](./img/mr-#1.png)
+
+![](./img/mr-#2.png)
