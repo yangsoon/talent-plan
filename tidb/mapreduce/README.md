@@ -71,7 +71,9 @@ make gendata
 
 ### 实验结果
 
-1. 测试example，但是由于
+测试之前，已经事先生成好数据。
+
+1. 测试example，但是由于电脑性能问题，无法在10分钟内完成，最终耗时658.60s。
 
 ```shell
 go test -v -run=TestExampleURLTop -timeout=20m                                                                                                                                                                                        === RUN   TestExampleURLTop
@@ -135,7 +137,7 @@ PASS
 ok  	talent	658.799s
 ```
 
-
+2. 测试自己实现的函数，每次执行时间都在82s左右。
 
 ```shell
 make test_homework
@@ -294,10 +296,10 @@ ok  	talent	82.628s
 
    首先我们看一下example的实现,语言描述比较难以理解，可以直接看下面的图片: 如图所示，example中的topK的计算分成了2次MapReduce来实现。
    
-   <img src="./img/mr-example-#1.png"/>
+   <img src="./img/mr-example-1.png"/>
 
-![](./img/mr-example-#2.png)
+![](./img/mr-example-2.png)
 
-![](./img/mr-#1.png)
+![](./img/mr-1.png)
 
-![](./img/mr-#2.png)
+![](./img/mr-2.png)
