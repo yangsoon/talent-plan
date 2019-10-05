@@ -7,7 +7,6 @@ import (
 )
 
 type srcSlice struct {
-	data []int64
 	beginIdx int
 	endIdx int
 }
@@ -25,26 +24,27 @@ func splitArr(src []int64) [][]int64{
 
 	batch := srcLen / cpuNum
 
-	slices := make([][]int64, cpuNum)
+	slicesIdx := make([]srcSlice, cpuNum)
 	for i:=0; i < cpuNum; i++ {
 		beginIdx := i * batch
 		endIdx := beginIdx + batch
 		if i == cpuNum - 1 {
 			endIdx = srcLen
 		}
-		slices[i] = make([]int64, endIdx-beginIdx)
-		copy(slices[i], src[beginIdx: endIdx])
-		slices[i] = src[beginIdx: endIdx]
+		slicesIdx[i].beginIdx = beginIdx
+		slicesIdx[i].endIdx = endIdx
 	}
 
 	for i:= 0; i < cpuNum; i++ {
-		go func(cpy []int64) {
+		b := slicesIdx[i].beginIdx
+		e := slicesIdx[i].endIdx
+		go func(s []int64) {
 			defer wg.Done()
-			sort.Slice(cpy, func(i, j int) bool {
-				return cpy[i] < cpy[j]
+			sort.Slice(s, func(i, j int) bool {
+				return s[i] < s[j]
 			})
-			arrs <- cpy
-		}(slices[i])
+			arrs <- s
+		}(src[b: e])
 	}
 
 	wg.Wait()
