@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+var urlKind = 1024
+
 // URLTop10 .
 func URLTop10(nWorkers int) RoundsArgs {
 	var args RoundsArgs
@@ -30,9 +32,8 @@ func URLTop10(nWorkers int) RoundsArgs {
 
 func URLCountMap(filename string, contents string) []KeyValue {
 	lines := strings.Split(contents, "\n")
-	kv := make(map[string]int, len(lines))
+	kv := make(map[string]int, urlKind)
 	for _, l := range lines {
-		//l = strings.TrimSpace(l)
 		if len(l) == 0 {
 			continue
 		}
@@ -41,7 +42,6 @@ func URLCountMap(filename string, contents string) []KeyValue {
 	kvs := make([]KeyValue, 0, len(lines))
 	var buffer bytes.Buffer
 	for k, v := range kv {
-
 		buffer.WriteString(k)
 		buffer.WriteString(" ")
 		buffer.WriteString(strconv.Itoa(v))
@@ -53,13 +53,12 @@ func URLCountMap(filename string, contents string) []KeyValue {
 
 		buffer.Reset()
 	}
-	//fmt.Println(kvs)
 	return kvs
 }
 
 func URLCountReduce(key string, values []string) string {
 
-	kv := make(map[string]int, len(values))
+	kv := make(map[string]int, urlKind)
 
 	for _, value := range values {
 		if len(value) == 0 {
@@ -110,7 +109,6 @@ func GetTopKReduce(key string, values []string) string {
 	ucs := make([]*UrlItem, 0, len(values))
 
 	for _, v := range values {
-		//v := strings.TrimSpace(v)
 		if len(v) == 0 {
 			continue
 		}

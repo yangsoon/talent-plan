@@ -351,3 +351,7 @@ Showing top 10 nodes out of 146
 ![](./img/mr-2.png)
 
 > 之前也考虑过只用一轮MapReduce解决问题，但是思考了一下，发现并不好，首先map worker的处理逻辑就会比较复杂，而且只能开一个reduce worker 会比较浪费cpu资源。实际上经过一轮的压缩，第二轮能够较快的执行完。实验显示第二轮的执行时间都在1ms左右。
+
+**其他优化**
+
+urlcountmap urlcountreduce 申请空间过大

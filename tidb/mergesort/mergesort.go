@@ -6,109 +6,111 @@ import (
 	"sync"
 )
 
-type srcSlice struct {
-	beginIdx int
-	endIdx int
+var interSrc []int64
+
+type partSrc struct {
+	start int
+	end int
 }
 
-func splitArr(src []int64) [][]int64{
-	cpuNum := runtime.NumCPU()
-	srcLen := len(src)
-	if srcLen < cpuNum {
-		cpuNum = srcLen
+func MergeSort(src []int64)  {
+	length := len(src)
+	numCPU := runtime.NumCPU()
+	if length < numCPU {
+		sort.Slice(src, func(i, j int) bool {
+			return src[i] < src[j]
+		})
+		return
 	}
 
-	arrs := make(chan []int64, cpuNum)
+	interSrc = make([]int64, length)
+	batch := length/numCPU
 	var wg sync.WaitGroup
-	wg.Add(cpuNum)
+	wg.Add(numCPU)
 
-	batch := srcLen / cpuNum
+	parts := make([]partSrc, numCPU)
 
-	slicesIdx := make([]srcSlice, cpuNum)
-	for i:=0; i < cpuNum; i++ {
-		beginIdx := i * batch
-		endIdx := beginIdx + batch
-		if i == cpuNum - 1 {
-			endIdx = srcLen
+	for i := 0; i < numCPU; i++ {
+		start := i*batch
+		end := start + batch
+		if i == numCPU - 1 {
+			end = length
 		}
-		slicesIdx[i].beginIdx = beginIdx
-		slicesIdx[i].endIdx = endIdx
-	}
-
-	for i:= 0; i < cpuNum; i++ {
-		b := slicesIdx[i].beginIdx
-		e := slicesIdx[i].endIdx
-		go func(s []int64) {
+		parts[i] = partSrc{start, end}
+		go func() {
 			defer wg.Done()
-			sort.Slice(s, func(i, j int) bool {
-				return s[i] < s[j]
-			})
-			arrs <- s
-		}(src[b: e])
+			s,e := start, end
+			coreSort(src, s, e)
+		}()
 	}
-
 	wg.Wait()
-	close(arrs)
-
-	out := make([][]int64, cpuNum)
-	for i:=0; i < cpuNum; i++{
-		out[i] = <-arrs
-	}
-	return out
+	subMerge(src, parts)
 }
 
-func subMerge(in1, in2 []int64) []int64{
-	leftIdx, rightIdx := 0,0
-	leftLen, rightLen := len(in1), len(in2)
-	res := make([]int64, leftLen+rightLen)
+//func coreSort(subsrc []int64) {
+//	sort.Slice(subsrc, func(i, j int) bool {
+//		return subsrc[i] < subsrc[j]
+//	})
+//}
 
-	i:=0
-	for leftIdx < leftLen && rightIdx < rightLen {
-		if in1[leftIdx] < in2[rightIdx] {
-			res[i] = in1[leftIdx]
-			leftIdx += 1
-		} else {
-			res[i] = in2[rightIdx]
-			rightIdx += 1
+func coreSort(src []int64, start, end int) {
+	if end-start <= 1 {
+		return
+	}
+	mid := (start + end) >> 1
+
+	coreSort(src, start, mid)
+	coreSort(src, mid, end)
+	merge(src, start, mid, end)
+}
+
+func subMerge(src []int64, parts []partSrc) {
+	n := len(parts)
+	for size:=1; size < n; size *= 2 {
+		var wg sync.WaitGroup
+		for low := 0; low < n - size; low += size * 2 	{
+			start := parts[low].start
+			mid := parts[low + size - 1].end
+			endIdx := low + size*2 -1
+			if endIdx > n - 1 {
+				endIdx = n - 1
+			}
+			end := parts[endIdx].end
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				merge(src, start, mid, end)
+			}()
 		}
-		i += 1
+		wg.Wait()
 	}
-
-	for leftIdx < leftLen {
-		res[i] = in1[leftIdx]
-		i++; leftIdx++
-	}
-	for rightIdx < rightLen {
-		res[i] = in2[rightIdx]
-		i++; rightIdx++
-	}
-	return res
 }
 
-func merge(in... []int64) []int64{
-	if len(in) == 1 {
-		return in[0]
+func merge(src []int64, start, mid, end int) {
+	left := start
+	right := mid
+	temp := start
+	for left < mid && right < end {
+		if src[left] > src[right] {
+			interSrc[temp] = src[right]
+			temp++; right++
+		} else{
+			interSrc[temp] = src[left]
+			temp++; left++
+		}
 	}
-	mid := len(in)/2
-	return subMerge(merge(in[:mid]...), merge(in[mid:]...))
+
+	for left < mid {
+		interSrc[temp] = src[left]
+		temp++; left++
+	}
+
+	for right < end {
+		interSrc[temp] = src[right]
+		temp++; right++
+	}
+
+	for i:=start; i < end; i++ {
+		src[i] = interSrc[i]
+	}
 }
-
-func MergeSort(src []int64) {
-	out := splitArr(src)
-	copy(src, merge(out...))
-}
-
-//func prepare(src []int64) {
-//	rand.Seed(time.Now().Unix())
-//	for i := range src {
-//		src[i] = rand.Int63()
-//	}
-//}
-
-//func main()  {
-//	numElements := 16 << 20
-//	src := make([]int64, numElements)
-//	prepare(src)
-//	MergeSort(src)
-//	//fmt.Println(src)
-//}

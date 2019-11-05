@@ -58,16 +58,6 @@ func collectResult(src []int64, output <-chan int64){
 
 func MergeSort1(src []int64) {
 
-	//cpuf, err := os.Create("cpu_pro")
-	//
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//
-	//pprof.StartCPUProfile(cpuf)
-    //defer pprof.StopCPUProfile()
-
-
 	// 返回逻辑cpu核数，分配多个任务
 	number := runtime.NumCPU()
 
@@ -118,17 +108,3 @@ func MergeSort1(src []int64) {
 
 	collectResult(src, output)
 }
-
-//func prepare(src []int64) {
-//	rand.Seed(time.Now().Unix())
-//	for i := range src {
-//		src[i] = rand.Int63()
-//	}
-//}
-
-//func main(){
-//	numElements := 16 << 20
-//	src := make([]int64, numElements)
-//	prepare(src)
-//	MergeSort1(src)
-//}
