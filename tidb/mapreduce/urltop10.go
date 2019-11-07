@@ -12,8 +12,7 @@ import (
 var urlKind = 1024
 
 // URLTop10 .
-func URLTop10(nWorkers int) RoundsArgs {
-	var args RoundsArgs
+func URLTop10(nWorkers int) (args RoundsArgs) {
 
 	args = append(args, RoundArgs{
 		MapFunc:    URLCountMap,
@@ -27,10 +26,10 @@ func URLTop10(nWorkers int) RoundsArgs {
 		NReduce:    1,
 	})
 
-	return args
+	return
 }
 
-func URLCountMap(filename string, contents string) []KeyValue {
+func URLCountMap(filename string, contents string) (kvs []KeyValue) {
 	lines := strings.Split(contents, "\n")
 	kv := make(map[string]int, urlKind)
 	for _, l := range lines {
@@ -39,7 +38,7 @@ func URLCountMap(filename string, contents string) []KeyValue {
 		}
 		kv[l] += 1
 	}
-	kvs := make([]KeyValue, 0, len(lines))
+	kvs = make([]KeyValue, 0, len(lines))
 	var buffer bytes.Buffer
 	for k, v := range kv {
 		buffer.WriteString(k)
@@ -53,11 +52,10 @@ func URLCountMap(filename string, contents string) []KeyValue {
 
 		buffer.Reset()
 	}
-	return kvs
+	return
 }
 
-func URLCountReduce(key string, values []string) string {
-
+func URLCountReduce(key string, values []string) (res string) {
 	kv := make(map[string]int, urlKind)
 
 	for _, value := range values {
@@ -78,12 +76,13 @@ func URLCountReduce(key string, values []string) string {
 	for i := 0; i < len(topk); i++ {
 		fmt.Fprintf(buf, "%s %d\n", topk[i].url, topk[i].cnt)
 	}
-	return buf.String()
+	res = buf.String()
+	return
 }
 
-func TopKMergeMap(filename string, contents string) []KeyValue {
+func TopKMergeMap(filename string, contents string) (kvs []KeyValue) {
 	lines := strings.Split(contents, "\n")
-	kvs := make([]KeyValue, 0, len(lines))
+	kvs = make([]KeyValue, 0, len(lines))
 
 	var buffer bytes.Buffer
 	for _, l := range lines {
@@ -102,11 +101,11 @@ func TopKMergeMap(filename string, contents string) []KeyValue {
 		})
 		buffer.Reset()
 	}
-	return kvs
+	return
 }
 
-func GetTopKReduce(key string, values []string) string {
-	ucs := make([]*UrlItem, 0, len(values))
+func GetTopKReduce(key string, values []string) (res string) {
+	ucs := make([]*URLItem, 0, len(values))
 
 	for _, v := range values {
 		if len(v) == 0 {
@@ -117,7 +116,7 @@ func GetTopKReduce(key string, values []string) string {
 		if err != nil {
 			panic(err)
 		}
-		ucs = append(ucs, &UrlItem{tmp[0], n})
+		ucs = append(ucs, &URLItem{tmp[0], n})
 	}
 
 	sort.Slice(ucs, func(i, j int) bool {
@@ -134,70 +133,71 @@ func GetTopKReduce(key string, values []string) string {
 		}
 		fmt.Fprintf(buf, "%s: %d\n", ucs[i].url, ucs[i].cnt)
 	}
-	return buf.String()
+	res = buf.String()
+	return
 }
 
-func Top10(urlkv map[string]int) UrlTopK {
+func Top10(urlKV map[string]int) (topK URLTopK) {
 
 	c := 0
-	topk := make(UrlTopK, 0, 10)
+	topK = make(URLTopK, 0, 10)
 
 	var minItem interface{}
 	var minVal int
 
-	for url, num := range urlkv {
+	for url, num := range urlKV {
 		c ++
 		switch {
 		case c > 10:
 			if num < minVal {
 				continue
 			}
-			heap.Push(&topk, UrlItem{url, num})
-			heap.Pop(&topk)
-			minItem = heap.Pop(&topk)
-			minVal = minItem.(UrlItem).cnt
-			heap.Push(&topk, minItem)
+			heap.Push(&topK, URLItem{url, num})
+			heap.Pop(&topK)
+			minItem = heap.Pop(&topK)
+			minVal = minItem.(URLItem).cnt
+			heap.Push(&topK, minItem)
 		case c < 10:
-			topk = append(topk, UrlItem{url, num})
+			topK = append(topK, URLItem{url, num})
 		case c == 10:
-			topk = append(topk, UrlItem{url, num})
-			heap.Init(&topk)
-			minItem = heap.Pop(&topk)
-			minVal = minItem.(UrlItem).cnt
-			heap.Push(&topk, minItem)
+			topK = append(topK, URLItem{url, num})
+			heap.Init(&topK)
+			minItem = heap.Pop(&topK)
+			minVal = minItem.(URLItem).cnt
+			heap.Push(&topK, minItem)
 		}
 	}
-	return topk
+	return
 }
 
-type UrlItem struct {
+type URLItem struct {
 	url string
 	cnt int
 }
 
-type UrlTopK [] UrlItem
+type URLTopK [] URLItem
 
-func (u UrlTopK) Len() int {
+func (u URLTopK) Len() int {
 	return len(u)
 }
 
-func (u UrlTopK) Less(i, j int) bool {
+func (u URLTopK) Less(i, j int) bool {
 	if u[i].cnt == u[j].cnt {
 		return u[i].url > u[j].url
 	}
 	return u[i].cnt < u[j].cnt
 }
 
-func (u UrlTopK) Swap(i, j int) {
+func (u URLTopK) Swap(i, j int) {
 	u[i], u[j] = u[j], u[i]
 }
 
-func (u *UrlTopK) Push(a interface{}) {
-	item := a.(UrlItem)
+func (u *URLTopK) Push(a interface{}) {
+	item := a.(URLItem)
 	*u = append(*u, item)
 }
 
-func (u *UrlTopK) Pop() interface{} {
+func (u *URLTopK) Pop() interface{} {
 	n := len(*u)
 	item := (*u)[n-1]
 	*u = (*u)[:n-1]
