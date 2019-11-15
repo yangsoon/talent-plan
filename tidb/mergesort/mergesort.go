@@ -47,18 +47,11 @@ func MergeSort(src []int64)  {
 	subMerge(src, parts)
 }
 
-//func coreSort(subsrc []int64) {
-//	sort.Slice(subsrc, func(i, j int) bool {
-//		return subsrc[i] < subsrc[j]
-//	})
-//}
-
 func coreSort(src []int64, start, end int) {
 	if end-start <= 1 {
 		return
 	}
 	mid := (start + end) >> 1
-
 	coreSort(src, start, mid)
 	coreSort(src, mid, end)
 	merge(src, start, mid, end)

@@ -123,6 +123,7 @@ func (c *MRCluster) worker() {
 
 					file, err := os.Open(rpath)
 					if err != nil {
+						//TODO 统一处理panic
 						panic(err)
 					}
 					decoder := json.NewDecoder(file)
