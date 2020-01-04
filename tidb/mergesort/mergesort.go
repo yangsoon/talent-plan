@@ -10,10 +10,10 @@ var interSrc []int64
 
 type partSrc struct {
 	start int
-	end int
+	end   int
 }
 
-func MergeSort(src []int64)  {
+func MergeSort(src []int64) {
 	length := len(src)
 	numCPU := runtime.NumCPU()
 	if length < numCPU {
@@ -24,24 +24,23 @@ func MergeSort(src []int64)  {
 	}
 
 	interSrc = make([]int64, length)
-	batch := length/numCPU
+	batch := length / numCPU
 	var wg sync.WaitGroup
 	wg.Add(numCPU)
 
 	parts := make([]partSrc, numCPU)
 
 	for i := 0; i < numCPU; i++ {
-		start := i*batch
+		start := i * batch
 		end := start + batch
-		if i == numCPU - 1 {
+		if i == numCPU-1 {
 			end = length
 		}
 		parts[i] = partSrc{start, end}
-		go func() {
+		go func(start, end int) {
 			defer wg.Done()
-			s,e := start, end
-			coreSort(src, s, e)
-		}()
+			coreSort(src, start, end)
+		}(start, end)
 	}
 	wg.Wait()
 	subMerge(src, parts)
@@ -51,7 +50,7 @@ func coreSort(src []int64, start, end int) {
 	if end-start <= 1 {
 		return
 	}
-	mid := (start + end) >> 1
+	mid := start + (end - start) >> 1
 	coreSort(src, start, mid)
 	coreSort(src, mid, end)
 	merge(src, start, mid, end)
@@ -59,21 +58,21 @@ func coreSort(src []int64, start, end int) {
 
 func subMerge(src []int64, parts []partSrc) {
 	n := len(parts)
-	for size:=1; size < n; size *= 2 {
+	for size := 1; size < n; size *= 2 {
 		var wg sync.WaitGroup
-		for low := 0; low < n - size; low += size * 2 	{
+		for low := 0; low < n-size; low += size * 2 {
 			start := parts[low].start
-			mid := parts[low + size - 1].end
-			endIdx := low + size*2 -1
-			if endIdx > n - 1 {
+			mid := parts[low+size-1].end
+			endIdx := low + size*2 - 1
+			if endIdx > n-1 {
 				endIdx = n - 1
 			}
 			end := parts[endIdx].end
 			wg.Add(1)
-			go func() {
+			go func(start, mid, end int) {
 				defer wg.Done()
 				merge(src, start, mid, end)
-			}()
+			}(start, mid, end)
 		}
 		wg.Wait()
 	}
@@ -82,28 +81,31 @@ func subMerge(src []int64, parts []partSrc) {
 func merge(src []int64, start, mid, end int) {
 	left := start
 	right := mid
-	temp := start
+	idx := start
 	for left < mid && right < end {
 		if src[left] > src[right] {
-			interSrc[temp] = src[right]
-			temp++; right++
-		} else{
-			interSrc[temp] = src[left]
-			temp++; left++
+			interSrc[idx] = src[right]
+			right++
+		} else {
+			interSrc[idx] = src[left]
+			left++
 		}
+		idx++
 	}
 
 	for left < mid {
-		interSrc[temp] = src[left]
-		temp++; left++
+		interSrc[idx] = src[left]
+		left++
+		idx++
 	}
 
 	for right < end {
-		interSrc[temp] = src[right]
-		temp++; right++
+		interSrc[idx] = src[right]
+		right++
+		idx++
 	}
 
-	for i:=start; i < end; i++ {
+	for i := start; i < end; i++ {
 		src[i] = interSrc[i]
 	}
 }
