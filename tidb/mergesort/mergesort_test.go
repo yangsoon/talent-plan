@@ -77,13 +77,14 @@ func (s *sortTestSuite) TestCoreSort(c *check.C) {
 	}
 }
 
-func (s *sortTestSuite) TestSubMerge(c *check.C) {
+func (s *sortTestSuite) TestB2UpMerge(c *check.C) {
 	cpus := []int{2, 4, 8, 16, 32, 64, 128}
 	lens := []int{1, 3, 5, 7, 11, 13, 17, 19, 23, 29, 1024, 1 << 13, 1 << 17, 1 << 19, 1 << 20}
 
 	for i := range lens {
 		src := make([]int64, lens[i])
 		expect := make([]int64, lens[i])
+		interSrc = make([]int64, lens[i])
 		for j := range cpus {
 			prepare(src)
 			copy(expect, src)
@@ -101,7 +102,7 @@ func (s *sortTestSuite) TestSubMerge(c *check.C) {
 				srcSlice := src[start:end]
 				sort.Slice(srcSlice, func(i, j int) bool { return srcSlice[i] < srcSlice[j] })
 			}
-			subMerge(src, parts)
+			b2UpMerge(src, parts)
 			for i := 0; i < len(src); i++ {
 				c.Assert(src[i], check.Equals, expect[i])
 			}

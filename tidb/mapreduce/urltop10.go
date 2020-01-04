@@ -96,7 +96,7 @@ func TopKMergeMap(filename string, contents string) (kvs []KeyValue) {
 		buffer.WriteString(tmp[1])
 
 		kvs = append(kvs, KeyValue{
-			Key: "",
+			Key:   "",
 			Value: buffer.String(),
 		})
 		buffer.Reset()
@@ -146,7 +146,7 @@ func Top10(urlKV map[string]int) (topK URLTopK) {
 	var minVal int
 
 	for url, num := range urlKV {
-		c ++
+		c++
 		switch {
 		case c > 10:
 			if num < minVal {
@@ -175,7 +175,7 @@ type URLItem struct {
 	cnt int
 }
 
-type URLTopK [] URLItem
+type URLTopK []URLItem
 
 func (u URLTopK) Len() int {
 	return len(u)

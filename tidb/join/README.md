@@ -55,3 +55,5 @@ Note:
 3. There is already a built-in unit test `JoinTest` defined in `join_test.go`. You can write your own unit tests, but please make sure `JoinTest` can be passed before.
 4. Use `make test` to run all the unit tests.
 5. Use `make bench` to run all the benchmarks.
+
+注意在s表和r表数据差距较大的时候对不分区的算法有利

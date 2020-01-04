@@ -35,7 +35,7 @@ func (s *joinTestSuite) TestJoin(c *check.C) {
 		// r2 join r2 on r2.col0 = r2.col0 and r2.col1 = r2.col1
 		{"./t/r2.tbl", "./t/r2.tbl", []int{0, 1}, []int{0, 1}, 0x5B385},
 	} {
-		c.Assert(Join(t.f0, t.f1, t.offsets0, t.offsets1), check.Equals, t.sum)
-		//c.Assert(JoinExample(t.f0, t.f1, t.offsets0, t.offsets1), check.Equals, t.sum)
+		//c.Assert(Join(t.f0, t.f1, t.offsets0, t.offsets1), check.Equals, t.sum)
+		c.Assert(JoinExample(t.f0, t.f1, t.offsets0, t.offsets1), check.Equals, t.sum)
 	}
 }

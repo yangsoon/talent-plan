@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	//"github.com/json-iterator/go"
 	"hash/fnv"
 	"io/ioutil"
 	"log"
@@ -13,8 +12,6 @@ import (
 	"strconv"
 	"sync"
 )
-
-//var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // KeyValue is a type used to hold the key/value pairs passed to the map and reduce functions.
 type KeyValue struct {
@@ -33,7 +30,7 @@ type jobPhase string
 
 const (
 	mapPhase    jobPhase = "mapPhase"
-	reducePhase 		 = "reducePhase"
+	reducePhase          = "reducePhase"
 )
 
 type task struct {
@@ -116,14 +113,13 @@ func (c *MRCluster) worker() {
 				// them into the destination file directly so that users can get
 				// results formatted as what they want.
 				fw, bw := CreateFileAndBuf(mergeName(t.dataDir, t.jobName, t.taskNumber))
-				kvMap := make(map[string] []string)
+				kvMap := make(map[string][]string)
 
-				for i:=0; i < t.nMap; i++ {
+				for i := 0; i < t.nMap; i++ {
 					rpath := reduceName(t.dataDir, t.jobName, i, t.taskNumber)
 
 					file, err := os.Open(rpath)
 					if err != nil {
-						//TODO 统一处理panic
 						panic(err)
 					}
 					decoder := json.NewDecoder(file)
@@ -133,9 +129,9 @@ func (c *MRCluster) worker() {
 						if err != nil {
 							break
 						}
-						if v, ok := kvMap[kv.Key]; ok{
+						if v, ok := kvMap[kv.Key]; ok {
 							kvMap[kv.Key] = append(v, kv.Value)
-						} else{
+						} else {
 							kvMap[kv.Key] = []string{kv.Value}
 						}
 					}
@@ -198,7 +194,7 @@ func (c *MRCluster) run(jobName, dataDir string, mapF MapF, reduceF ReduceF, map
 	// reduce phase
 	// YOUR CODE HERE :D
 	rtasks := make([]*task, 0, nReduce)
-	for i:=0; i < nReduce; i++ {
+	for i := 0; i < nReduce; i++ {
 		t := &task{
 			dataDir:    dataDir,
 			jobName:    jobName,
@@ -214,7 +210,7 @@ func (c *MRCluster) run(jobName, dataDir string, mapF MapF, reduceF ReduceF, map
 	}
 
 	notifyFiles := make([]string, 0, nReduce)
-	for _,t := range rtasks {
+	for _, t := range rtasks {
 		t.wg.Wait()
 		fileName := mergeName(t.dataDir, t.jobName, t.taskNumber)
 		notifyFiles = append(notifyFiles, fileName)

@@ -56,7 +56,7 @@ func collectResult(src []int64, output <-chan int64){
 	}
 }
 
-func MergeSort1(src []int64) {
+func BadMergeSort(src []int64) {
 
 	// 返回逻辑cpu核数，分配多个任务
 	number := runtime.NumCPU()
