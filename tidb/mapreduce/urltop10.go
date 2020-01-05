@@ -9,7 +9,14 @@ import (
 	"strings"
 )
 
-var urlKind = 1024
+var URLKind = 1024
+
+type URLItem struct {
+	url string
+	cnt int
+}
+
+type URLTopK []URLItem
 
 // URLTop10 .
 func URLTop10(nWorkers int) (args RoundsArgs) {
@@ -31,14 +38,21 @@ func URLTop10(nWorkers int) (args RoundsArgs) {
 
 func URLCountMap(filename string, contents string) (kvs []KeyValue) {
 	lines := strings.Split(contents, "\n")
-	kv := make(map[string]int, urlKind)
+	kv := make(map[string]int, URLKind)
+
+	var kindCount int
+
 	for _, l := range lines {
 		if len(l) == 0 {
 			continue
 		}
-		kv[l] += 1
+		if _, ok := kv[l]; !ok {
+			kindCount++
+		}
+		kv[l]++
 	}
-	kvs = make([]KeyValue, 0, len(lines))
+
+	kvs = make([]KeyValue, 0, kindCount)
 	var buffer bytes.Buffer
 	for k, v := range kv {
 		buffer.WriteString(k)
@@ -56,7 +70,7 @@ func URLCountMap(filename string, contents string) (kvs []KeyValue) {
 }
 
 func URLCountReduce(key string, values []string) (res string) {
-	kv := make(map[string]int, urlKind)
+	kv := make(map[string]int, URLKind)
 
 	for _, value := range values {
 		if len(value) == 0 {
@@ -169,13 +183,6 @@ func Top10(urlKV map[string]int) (topK URLTopK) {
 	}
 	return
 }
-
-type URLItem struct {
-	url string
-	cnt int
-}
-
-type URLTopK []URLItem
 
 func (u URLTopK) Len() int {
 	return len(u)
