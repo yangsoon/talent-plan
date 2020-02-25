@@ -1,12 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"runtime"
-	"strconv"
-
+	"encoding/csv"
 	"github.com/pingcap/tidb/util/mvmap"
+	"io"
+	"os"
+	"strconv"
+	"unsafe"
 )
+
+const blockLine  = 800
 
 // Join accepts a join query of two relations, and returns the sum of
 // relation0.col0 in the final result.
@@ -17,45 +20,102 @@ import (
 //   offset1: offsets of which columns the given relation1 should be joined
 // Output arguments:
 //   sum: sum of relation0.col0 in the final result
+//func Join(f0, f1 string, offset0, offset1 []int) (sum uint64) {
+//
+//}
 func Join(f0, f1 string, offset0, offset1 []int) (sum uint64) {
-	tbl0, tbl1 := readCSVFileIntoTbl(f0), readCSVFileIntoTbl(f1)
-	if len(tbl0) > len(tbl1) {
-		tbl0, tbl1 = tbl1, tbl0
-		offset0, offset1 = offset1, offset0
+
+	blockResourceInnerCh := make(chan [][]string, 1)
+	blockResourceOuterCh := make(chan [][]string, 1)
+
+	go fecthCSVBlock(f0, blockResourceInnerCh)
+	hashtable := hashWorker(blockResourceInnerCh, offset0)
+
+	go fecthCSVBlock(f1, blockResourceOuterCh)
+	joinWorker(hashtable, blockResourceOuterCh, offset1, &sum)
+
+	return
+}
+
+func fecthCSVBlock(f string, blockResourceCh chan [][]string){
+
+	defer close(blockResourceCh)
+
+	csvFile, err := os.Open(f)
+	if err != nil {
+		panic("ReadFile " + f + "fail\n" + err.Error())
 	}
-	fmt.Printf("tbl0:%d tbl1:%d\n", len(tbl0), len(tbl1))
-	hashtable := buildHashTable(tbl0, offset0)
-	numCPU := runtime.NumCPU()
-	resultCh := make(chan uint64, numCPU)
-	batch := len(tbl1) / numCPU
-	for i := 0; i < numCPU; i++ {
-		start := i * batch
-		end := start + batch
-		if i == numCPU-1 {
-			end = len(tbl1)
+	defer csvFile.Close()
+
+	csvReader := csv.NewReader(csvFile)
+	block := make([][]string, 0, blockLine)
+	c := 0
+	for {
+		row, err := csvReader.Read()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			panic("ReadCSVFile " + f + "fail\n" + err.Error())
 		}
-		go func() {
-			s, e := start, end
-			joinWorker(hashtable, tbl1[s:e], tbl0, offset1, resultCh)
-		}()
+		c++
+		block = append(block, row)
+		if c == blockLine {
+			blockResourceCh <- block
+			c = 0
+			block = make([][]string, 0, blockLine)
+		}
 	}
-	for i := 0; i < numCPU; i++ {
-		sum += <-resultCh
+	blockResourceCh <- block
+}
+
+func hashWorker(blockResourceCh chan [][]string, offset []int) (hashtable *mvmap.MVMap){
+
+	var keyBuffer []byte
+	valBuffer := make([]byte, 8)
+	hashtable = mvmap.NewMVMap()
+	for block := range blockResourceCh {
+		for _, row := range block {
+			for j, off := range offset {
+				if j > 0 {
+					keyBuffer = append(keyBuffer, '_')
+				}
+				keyBuffer = append(keyBuffer, []byte(row[off])...)
+			}
+			v, err := strconv.ParseUint(row[0], 10, 64)
+			if err != nil {
+				panic("hashWorker Convert\n" + err.Error())
+			}
+			*(*int64)(unsafe.Pointer(&valBuffer[0])) = int64(v)
+			hashtable.Put(keyBuffer, valBuffer)
+			keyBuffer = keyBuffer[:0]
+		}
 	}
 	return
 }
 
-func joinWorker(hashtable *mvmap.MVMap, outerSlice [][]string, innertbl [][]string, offset []int, resultCh chan uint64) {
-	var sum uint64
-	for _, row := range outerSlice {
-		rowIDs := probe(hashtable, row, offset)
-		for _, id := range rowIDs {
-			v, err := strconv.ParseUint(innertbl[id][0], 10, 64)
-			if err != nil {
-				panic("JoinExample panic\n" + err.Error())
+func joinWorker(hashtable *mvmap.MVMap, blockResourceCh chan [][]string, offset []int, sum *uint64) {
+
+	var keyHash []byte
+	var vals [][]byte
+	for block := range blockResourceCh {
+		for _, row := range block {
+			for i, off := range offset {
+				if i > 0 {
+					keyHash = append(keyHash, '_')
+				}
+				keyHash = append(keyHash, []byte(row[off])...)
 			}
-			sum += v
+			vals = hashtable.Get(keyHash, vals)
+			keyHash = keyHash[:0]
 		}
 	}
-	resultCh <- sum
+	for _, val := range vals {
+		v := *(*int64)(unsafe.Pointer(&val[0]))
+		*sum += uint64(v)
+	}
 }
+//
+//func main() {
+//	sum := Join("./t/r.tbl","./t/r.tbl",[]int{0}, []int{1})
+//	fmt.Println(sum)
+//}
