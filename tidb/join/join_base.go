@@ -64,6 +64,7 @@ func joinBaseWorker(hashtable *mvmap.MVMap, outerSlice [][]string, innertbl [][]
 		keyHash = keyHash[:0]
 		switch flag {
 		case true:
+			// 当使用右表进行probe的时候，我们取出左表对应的row[0]值和从hash表中查找到的数组长度相乘，用来计算sum。
 			v, err := strconv.ParseInt(row[0], 10, 64)
 			if err != nil {
 				panic("joinBaseWorker Convert\n" + err.Error())
@@ -71,6 +72,7 @@ func joinBaseWorker(hashtable *mvmap.MVMap, outerSlice [][]string, innertbl [][]
 			t := v * int64(len(vals))
 			sum += uint64(t)
 		case false:
+        	// 当使用左表进行probe的时候，我们从hash表获取到相应的值之后进行累加进行就可以了。
 			for _, val := range vals {
 				v := *(*int64)(unsafe.Pointer(&val[0]))
 				sum += uint64(v)
@@ -99,8 +101,10 @@ func buildHashTblBase(tbl [][]string, offset []int, flag bool) (hashtable *mvmap
 		}
 		switch flag {
 		case true:
+        	// 当使用右表进行hash的时候，我们只要简单的向keyBuffer对应的值中插入一个大小为0的[]byte数组就行，因为这里值是用来存储数据长度的。
 			hashtable.Put(keyBuffer, valBuffer)
 		case false:
+			// 当使用左表进行hash的时候，我们这里选择存储row[0]的值，在probe阶段就不用再去查找左表来计算sum值了。
 			v, err := strconv.ParseInt(row[0], 10, 64)
 			if err != nil {
 				panic("hashWorker Convert\n" + err.Error())

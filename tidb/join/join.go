@@ -20,9 +20,6 @@ const blockLine  = 1000
 //   offset1: offsets of which columns the given relation1 should be joined
 // Output arguments:
 //   sum: sum of relation0.col0 in the final result
-//func Join(f0, f1 string, offset0, offset1 []int) (sum uint64) {
-//
-//}
 func Join(f0, f1 string, offset0, offset1 []int) (sum uint64) {
 
 	blockResourceInnerCh := make(chan [][]string, 1)
@@ -37,6 +34,10 @@ func Join(f0, f1 string, offset0, offset1 []int) (sum uint64) {
 	return
 }
 
+// Read CSV File as blocks and send to channel blockResourceCh
+// Input arguments:
+//   f: file name of the csv file
+//   blockResourceCh: a channel which send block
 func fecthCSVBlock(f string, blockResourceCh chan [][]string){
 
 	defer close(blockResourceCh)
@@ -50,6 +51,7 @@ func fecthCSVBlock(f string, blockResourceCh chan [][]string){
 	csvReader := csv.NewReader(csvFile)
 	block := make([][]string, 0, blockLine)
 	c := 0
+    // 当从磁盘读入一个block块的数据之后，将数据传递给通道blockResourceCh，hashWork会读取block的数据进行数据处理。
 	for {
 		row, err := csvReader.Read()
 		if err == io.EOF {
@@ -69,6 +71,12 @@ func fecthCSVBlock(f string, blockResourceCh chan [][]string){
 	blockResourceCh <- block
 }
 
+// Hash block from blockResourceCh
+// Input arguments:
+//   blockResourceCh: a channel which get block
+//   offset: offsets of which columns the given block should be hashed
+// Output arguments:
+//   hashtable: hashtable of blcok
 func hashWorker(blockResourceCh chan [][]string, offset []int) (hashtable *mvmap.MVMap){
 
 	var keyBuffer []byte
@@ -94,6 +102,12 @@ func hashWorker(blockResourceCh chan [][]string, offset []int) (hashtable *mvmap
 	return
 }
 
+// join block
+// Input arguments:
+//   hashtable: hashtable of other relation
+//   blockResourceCh: a channel which get block
+//   offset: offsets of which columns the given block should be joined
+//   sum: res of sum(relation.col0)
 func joinWorker(hashtable *mvmap.MVMap, blockResourceCh chan [][]string, offset []int, sum *uint64) {
 
 	var keyHash []byte
@@ -117,7 +131,3 @@ func joinWorker(hashtable *mvmap.MVMap, blockResourceCh chan [][]string, offset 
 	}
 
 }
-//
-//func main() {
-//	Join("./t/r3.tbl","./t/r3.tbl",[]int{0}, []int{1})
-//}
