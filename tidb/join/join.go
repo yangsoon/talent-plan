@@ -9,7 +9,7 @@ import (
 	"unsafe"
 )
 
-const blockLine  = 800
+const blockLine  = 1000
 
 // Join accepts a join query of two relations, and returns the sum of
 // relation0.col0 in the final result.
@@ -65,6 +65,7 @@ func fecthCSVBlock(f string, blockResourceCh chan [][]string){
 			block = make([][]string, 0, blockLine)
 		}
 	}
+
 	blockResourceCh <- block
 }
 
@@ -107,15 +108,16 @@ func joinWorker(hashtable *mvmap.MVMap, blockResourceCh chan [][]string, offset 
 			}
 			vals = hashtable.Get(keyHash, vals)
 			keyHash = keyHash[:0]
+			for _, val := range vals {
+				v := *(*int64)(unsafe.Pointer(&val[0]))
+				*sum += uint64(v)
+			}
+			vals = vals[:0]
 		}
 	}
-	for _, val := range vals {
-		v := *(*int64)(unsafe.Pointer(&val[0]))
-		*sum += uint64(v)
-	}
+
 }
 //
 //func main() {
-//	sum := Join("./t/r.tbl","./t/r.tbl",[]int{0}, []int{1})
-//	fmt.Println(sum)
+//	Join("./t/r3.tbl","./t/r3.tbl",[]int{0}, []int{1})
 //}
